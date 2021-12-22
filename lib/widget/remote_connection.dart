@@ -32,7 +32,7 @@ class _RemoteConnectionState extends State<RemoteConnection> {
     return Expanded(
       child: Stack(
         children: <Widget>[
-          RTCVideoView(widget.renderer),
+          RTCVideoView(widget.renderer,objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,),
           Positioned(
             child: Container(
               padding: EdgeInsets.all(5),

@@ -89,33 +89,39 @@ class Meeting extends EventEmitter {
 
   Future<Connection> createConnection(UserJoinedData data) async {
     if (stream != null) {
-      final connection = new Connection(
-        connectionType: 'incoming',
-        userId: data.userId,
-        name: data.name,
-        stream: stream,
-        audioEnabled: data.config.audioEnabled,
-        videoEnabled: data.config.videoEnabled,
-      );
-      connection.on('connected', null, (ev, context) {
-        print('rtp connected');
-      });
-      connection.on('candidate', null, (ev, context) {
-        if (!isHost) sendIceCandidate(connection.userId, ev.eventData);
-      });
-      connection.on('stream-changed', null, (ev, context) {
-        this.emit('stream-changed');
-      });
-      if (connections.indexWhere(
-                  (element) => element.userId == connection.userId) ==
+      if (connections.indexWhere((element) => element.userId == data.userId) ==
               -1 &&
-          connection.userId != userId) connections.add(connection);
+          data.userId != userId) {
+        final connection = new Connection(
+          connectionType: 'incoming',
+          userId: data.userId,
+          name: data.name,
+          stream: stream,
+          audioEnabled: data.config.audioEnabled,
+          videoEnabled: data.config.videoEnabled,
+        );
+        connection.on('connected', null, (ev, context) {
+          print('rtp connected');
+        });
+        connection.on('candidate', null, (ev, context) {
+          if (!isHost) sendIceCandidate(connection.userId, ev.eventData);
+        });
+        connection.on('stream-changed', null, (ev, context) {
+          this.emit('stream-changed');
+        });
+        connections.add(connection);
 
-      print("createConnection  $data  ${connections}");
+        print("createConnection  $data  ${connections}");
 
-      await connection.start();
-      this.emit('connection', null, connection);
-      return connection;
+        await connection.start();
+        this.emit('connection', null, connection);
+        return connection;
+      } else {
+        var connection = getConnection(data.userId);
+        await connection.start();
+        this.emit('connection', null, connection);
+        return connection;
+      }
     }
     return null;
   }
