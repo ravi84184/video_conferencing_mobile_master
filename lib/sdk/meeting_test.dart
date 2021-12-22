@@ -8,7 +8,7 @@ import 'package:video_conferening_mobile/sdk/message_payload.dart';
 import 'package:video_conferening_mobile/sdk/payload_data.dart';
 import 'package:video_conferening_mobile/sdk/transport.dart';
 
-class Meeting extends EventEmitter {
+class MeetingTest extends EventEmitter {
   final String url =
       'wss://connect.websocket.in/v3/1?api_key=oCdCMcMPQpbvNjUIzqtvF1d2X2okWpDQj4AwARJuAgtjhzKxVEjQU6IdCjwm&notify_self';
 
@@ -16,9 +16,7 @@ class Meeting extends EventEmitter {
   Transport transport;
   String meetingId;
   List<Connection> connections = new List();
-  bool joined = false;
   bool connected = false;
-  bool isHost = false;
   MediaStream stream;
   String userId;
   String name;
@@ -26,7 +24,8 @@ class Meeting extends EventEmitter {
   bool videoEnabled = true;
   bool audioEnabled = true;
 
-  Meeting({this.meetingId, this.userId, this.name, this.stream, this.isHost}) {
+  MeetingTest(
+      {this.meetingId, this.userId, this.name, this.stream, bool isHost}) {
     this.transport = new Transport(
       url: formatUrl(this.meetingId),
       maxRetryCount: 3,
@@ -37,6 +36,11 @@ class Meeting extends EventEmitter {
 
   String formatUrl(String id) {
     return '$url';
+  }
+
+  Connection getConnection(String userId) {
+    return connections.firstWhere((connection) => connection.userId == userId,
+        orElse: () => null);
   }
 
   MessagePayload parseMessage(dynamic data) {
@@ -58,33 +62,50 @@ class Meeting extends EventEmitter {
     }
   }
 
-  void listenMessage() {
-    if (transport != null) {
-      transport.on('open', null, (ev, context) {
-        this.emit('open');
-        connected = true;
-        print(ev.eventName);
-        join();
-      });
-      transport.on('message', null, (ev, context) {
-        print(ev.eventData);
-        final payload = parseMessage(ev.eventData);
-        handleMessage(payload);
-      });
-      transport.on('closed', null, (ev, context) {
-        connected = false;
-      });
-      transport.on('failed', null, (ev, context) {
-        this.reset();
-        this.emit('failed');
-      });
-      transport.connect();
+  void join() {
+    this.sendMessage('join-meeting', {
+      'name': name,
+      'userId': userId,
+      'config': {
+        'audioEnabled': audioEnabled,
+        'videoEnabled': videoEnabled,
+      },
+    });
+  }
+
+  Future<void> joinedMeeting(UserJoinedData data) async {
+    final connection = await createConnection(data);
+    if (connection != null) {
+      sendOfferSdp(data.userId);
+      /*this.sendMessage('join-meeting', {
+          'name': name,
+          'userId': userId,
+          'config': {
+            'audioEnabled': audioEnabled,
+            'videoEnabled': videoEnabled,
+          },
+        });*/
     }
   }
 
-  Connection getConnection(String userId) {
-    return connections.firstWhere((connection) => connection.userId == userId,
-        orElse: () => null);
+  logPrint(data) {
+    print("========= Start ==========");
+    print(data);
+    print("========= End ==========");
+  }
+
+  void sendOfferSdp(userId) async {
+    final connection = getConnection(userId);
+    if (connection != null) {
+      final sdp = await connection.createOffer();
+      logPrint("Offer Send");
+      sendMessage('offer-sdp', {
+        'userId': this.userId,
+        'hostUser': this.userId,
+        'answerUser': userId,
+        'sdp': sdp.toMap(),
+      });
+    } else {}
   }
 
   Future<Connection> createConnection(UserJoinedData data) async {
@@ -104,7 +125,7 @@ class Meeting extends EventEmitter {
           print('rtp connected');
         });
         connection.on('candidate', null, (ev, context) {
-          /*if (!isHost)*/ sendIceCandidate(connection.userId, ev.eventData);
+          // sendIceCandidate(connection.userId, ev.eventData);
         });
         connection.on('stream-changed', null, (ev, context) {
           this.emit('stream-changed');
@@ -117,129 +138,15 @@ class Meeting extends EventEmitter {
         this.emit('connection', null, connection);
         return connection;
       } else {
-        var connection = getConnection(data.userId);
-        if(connection != null) {
+        /*var connection = getConnection(data.userId);
+        if (connection != null) {
           await connection.start();
           this.emit('connection', null, connection);
           return connection;
-        }
+        }*/
       }
     }
     return null;
-  }
-
-  void join() {
-    this.sendMessage('join-meeting', {
-      'name': name,
-      'userId': userId,
-      'config': {
-        'audioEnabled': audioEnabled,
-        'videoEnabled': videoEnabled,
-      },
-    });
-  }
-
-  void userJoin() {
-    this.sendMessage('user-joined', {
-      'name': name,
-      'userId': userId,
-      'config': {
-        'audioEnabled': audioEnabled,
-        'videoEnabled': videoEnabled,
-      },
-    });
-  }
-
-  void joinedMeeting(JoinedMeetingData data) {
-    joined = true;
-    // userId = data.userId;
-    userJoin();
-  }
-
-  void userJoined(UserJoinedData data) async {
-    final connection = await createConnection(data);
-    if (connection != null) {
-      if (!isHost) sendConnectionRequest(connection.userId);
-    }
-  }
-
-  void sendIceCandidate(String otherUserId, RTCIceCandidate candidate) {
-    sendMessage('icecandidate', {
-      'userId': userId,
-      'otherUserId': otherUserId,
-      'candidate': candidate.toMap(),
-    });
-  }
-
-  void sendConnectionRequest(String otherUserId) {
-    sendMessage('connection-request', {
-      'name': name,
-      'userId': userId,
-      'otherUserId': otherUserId,
-      'config': {
-        'audioEnabled': audioEnabled,
-        'videoEnabled': videoEnabled,
-      },
-    });
-  }
-
-  void receivedConnectionRequest(UserJoinedData data) async {
-    final connection = await createConnection(data);
-    if (connection != null) {
-      if (isHost) sendOfferSdp(data.userId);
-    }
-  }
-
-  void sendOfferSdp(String otherUserId) async {
-    final connection = getConnection(otherUserId);
-    if (connection != null) {
-      final sdp = await connection.createOffer();
-      sendMessage('offer-sdp', {
-        'userId': userId,
-        'otherUserId': otherUserId,
-        'sdp': sdp.toMap(),
-      });
-    }
-  }
-
-  void receivedOfferSdp(OfferSdpData data) {
-    if (!isHost) this.sendAnswerSdp(data.userId, data.sdp);
-  }
-
-  void sendAnswerSdp(String otherUserId, RTCSessionDescription sdp) async {
-    final connection = getConnection(otherUserId);
-    if (connection != null) {
-      await connection.setOfferSdp(sdp);
-      final answerSdp = await connection.createAnswer();
-      sendMessage('answer-sdp', {
-        'userId': this.userId,
-        'otherUserId': otherUserId,
-        'sdp': answerSdp.toMap(),
-      });
-    }
-  }
-
-  void receivedAnswerSdp(AnswerSdpData data) async {
-    final connection = getConnection(data.userId);
-    if (connection != null) {
-      if (isHost) await connection.setAnswerSdp(data.sdp);
-    }
-  }
-
-  void setIceCandidate(IceCandidateData data) async {
-    final connection = getConnection(data.userId);
-    if (connection != null) {
-      await connection.setCandidate(data.candidate);
-    }
-  }
-
-  void userLeft(UserLeftData data) {
-    final connection = getConnection(data.userId);
-    if (connection != null) {
-      this.emit('user-left', null, connection);
-      connection.close();
-      connections.removeWhere((element) => element.userId == connection.userId);
-    }
   }
 
   void meetingEnded(MeetingEndedData data) {
@@ -259,6 +166,26 @@ class Meeting extends EventEmitter {
       'userId': this.userId,
     });
     destroy();
+  }
+
+  void destroy() {
+    if (transport != null) {
+      transport.destroy();
+      transport = null;
+    }
+    connections.forEach((connection) {
+      connection.close();
+    });
+    stopStream();
+    connections = [];
+    connected = false;
+    stream = null;
+  }
+
+  stopStream() {
+    if (stream != null) {
+      stream.dispose();
+    }
   }
 
   bool toggleVideo() {
@@ -309,9 +236,28 @@ class Meeting extends EventEmitter {
     }
   }
 
-  void handleUserMessage(MessageData data) {
-    this.messages.add(data.message);
-    this.emit('message', null, data.message);
+  void listenMessage() {
+    if (transport != null) {
+      transport.on('open', null, (ev, context) {
+        this.emit('open');
+        connected = true;
+        print(ev.eventName);
+        join();
+      });
+      transport.on('message', null, (ev, context) {
+        print(ev.eventData);
+        final payload = parseMessage(ev.eventData);
+        handleMessage(payload);
+      });
+      transport.on('closed', null, (ev, context) {
+        connected = false;
+      });
+      transport.on('failed', null, (ev, context) {
+        this.reset();
+        this.emit('failed');
+      });
+      transport.connect();
+    }
   }
 
   void sendUserMessage(String text) {
@@ -324,28 +270,11 @@ class Meeting extends EventEmitter {
     });
   }
 
-  void handleNotFound() {
-    this.emit('not-found');
-  }
-
-  stopStream() {
-    if (stream != null) {
-      stream.dispose();
-    }
-  }
-
   void handleMessage(MessagePayload payload) {
     print("handleMessage ${payload.type}");
     switch (payload.type) {
-      // case 'joined-meeting':
       case 'join-meeting':
-        joinedMeeting(JoinedMeetingData.fromJson(payload.data));
-        break;
-      case 'user-joined':
-        userJoined(UserJoinedData.fromJson(payload.data));
-        break;
-      case 'connection-request':
-        receivedConnectionRequest(UserJoinedData.fromJson(payload.data));
+        joinedMeeting(UserJoinedData.fromJson(payload.data));
         break;
       case 'offer-sdp':
         receivedOfferSdp(OfferSdpData.fromJson(payload.data));
@@ -353,14 +282,11 @@ class Meeting extends EventEmitter {
       case 'answer-sdp':
         receivedAnswerSdp(AnswerSdpData.fromJson(payload.data));
         break;
-      case 'user-left':
-        userLeft(UserLeftData.fromJson(payload.data));
-        break;
-      case 'meeting-ended':
-        meetingEnded(MeetingEndedData.fromJson(payload.data));
-        break;
       case 'icecandidate':
         setIceCandidate(IceCandidateData.fromJson(payload.data));
+        break;
+      case 'leave-meeting':
+        leaveMetting(LeaveCandidateData.fromJson(payload.data));
         break;
       case 'video-toggle':
         listenVideoToggle(VideoToggleData.fromJson(payload.data));
@@ -368,35 +294,107 @@ class Meeting extends EventEmitter {
       case 'audio-toggle':
         listenAudioToggle(AudioToggleData.fromJson(payload.data));
         break;
-      case 'message':
+      /*case 'message':
         handleUserMessage(MessageData.fromJson(payload.data));
         break;
       case 'not-found':
         handleNotFound();
-        break;
+        break;*/
       default:
         break;
     }
   }
 
-  void destroy() {
-    if (transport != null) {
-      transport.destroy();
-      transport = null;
+  void setIceCandidate(IceCandidateData data) async {
+    if (data.userId == this.userId) {
+      return;
     }
-    connections.forEach((connection) {
-      connection.close();
+    logPrint("setIceCandidate");
+    final connection = getConnection(data.userId);
+    if (connection != null) {
+      await connection.setCandidate(data.candidate);
+    }
+  }
+
+  void leaveMetting(LeaveCandidateData data) async {
+    var index = connections.indexWhere((element) => element.userId == data.userId);
+    if(index != -1){
+      connections[index].close();
+      connections.removeAt(index);
+      this.emit('connection-setting-changed');
+    }
+  }
+
+  void receivedAnswerSdp(AnswerSdpData data) async {
+    if (data.userId == this.userId || data.otherUserId != this.userId) {
+      return;
+    }
+    logPrint("received Answer");
+    final connection = getConnection(data.userId);
+    if (connection != null) {
+      await connection.setAnswerSdp(data.sdp);
+      connection.on('candidate', null, (ev, context) {
+        sendIceCandidate(connection.userId, ev.eventData);
+      });
+    } else {
+      await createConnection(UserJoinedData(
+          name: "${data.userId}",
+          userId: "${data.userId}",
+          config: Config(
+            audioEnabled: true,
+            videoEnabled: true,
+          )));
+      receivedAnswerSdp(data);
+    }
+  }
+
+  void sendIceCandidate(String otherUserId, RTCIceCandidate candidate) {
+    if (otherUserId == this.userId) {
+      return;
+    }
+    logPrint("sendIceCandidate");
+    sendMessage('icecandidate', {
+      'userId': userId,
+      'otherUserId': otherUserId,
+      'candidate': candidate.toMap(),
     });
-    stopStream();
-    connections = [];
-    connected = false;
-    stream = null;
-    joined = false;
+  }
+
+  void receivedOfferSdp(OfferSdpData data) {
+    if (this.userId != data.userId) {
+      logPrint("Offer receive");
+      this.sendAnswerSdp(data.userId, data.sdp);
+    }
+  }
+
+  void sendAnswerSdp(String otherUserId, RTCSessionDescription sdp) async {
+    final connection = getConnection(otherUserId);
+    if (connection != null) {
+      await connection.setOfferSdp(sdp);
+      final answerSdp = await connection.createAnswer();
+      logPrint("sendAnswerSdp");
+      sendMessage('answer-sdp', {
+        'userId': this.userId,
+        'otherUserId': otherUserId,
+        'sdp': answerSdp.toMap(),
+      });
+      connection.on('candidate', null, (ev, context) {
+        sendIceCandidate(connection.userId, ev.eventData);
+      });
+    } else {
+      await createConnection(UserJoinedData(
+          name: "${otherUserId}",
+          userId: "${otherUserId}",
+          config: Config(
+            audioEnabled: true,
+            videoEnabled: true,
+          )));
+      sendAnswerSdp(otherUserId,sdp);
+    }
   }
 
   void reset() {
     this.connections = new List();
-    this.joined = false;
     this.connected = false;
   }
 

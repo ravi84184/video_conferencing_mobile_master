@@ -29,66 +29,64 @@ class _RemoteConnectionState extends State<RemoteConnection> {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Stack(
-        children: <Widget>[
-          RTCVideoView(widget.renderer,objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,),
-          Positioned(
-            child: Container(
-              padding: EdgeInsets.all(5),
-              color: Color.fromRGBO(0, 0, 0, 0.7),
+    return Stack(
+      children: <Widget>[
+        RTCVideoView(widget.renderer,objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,),
+        Positioned(
+          child: Container(
+            padding: EdgeInsets.all(5),
+            color: Color.fromRGBO(0, 0, 0, 0.7),
+            child: Text(
+              widget.connection.name,
+              style: TextStyle(
+                fontSize: 20.0,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          bottom: 10.0,
+          left: 10.0,
+        ),
+        Container(
+          color: widget.connection.videoEnabled
+              ? Colors.transparent
+              : Colors.black,
+          child: Center(
               child: Text(
-                widget.connection.name,
-                style: TextStyle(
-                  fontSize: 20.0,
+            widget.connection.videoEnabled ? '' : widget.connection.name,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 30.0,
+            ),
+          )),
+        ),
+        Positioned(
+          child: Container(
+            padding: EdgeInsets.all(5),
+            color: Color.fromRGBO(0, 0, 0, 0.7),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  widget.connection.videoEnabled
+                      ? Icons.videocam
+                      : Icons.videocam_off,
                   color: Colors.white,
                 ),
-              ),
+                SizedBox(
+                  width: 10,
+                  height: 10,
+                ),
+                Icon(
+                  widget.connection.audioEnabled ? Icons.mic : Icons.mic_off,
+                  color: Colors.white,
+                ),
+              ],
             ),
-            bottom: 10.0,
-            left: 10.0,
           ),
-          Container(
-            color: widget.connection.videoEnabled
-                ? Colors.transparent
-                : Colors.black,
-            child: Center(
-                child: Text(
-              widget.connection.videoEnabled ? '' : widget.connection.name,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 30.0,
-              ),
-            )),
-          ),
-          Positioned(
-            child: Container(
-              padding: EdgeInsets.all(5),
-              color: Color.fromRGBO(0, 0, 0, 0.7),
-              child: Row(
-                children: <Widget>[
-                  Icon(
-                    widget.connection.videoEnabled
-                        ? Icons.videocam
-                        : Icons.videocam_off,
-                    color: Colors.white,
-                  ),
-                  SizedBox(
-                    width: 10,
-                    height: 10,
-                  ),
-                  Icon(
-                    widget.connection.audioEnabled ? Icons.mic : Icons.mic_off,
-                    color: Colors.white,
-                  ),
-                ],
-              ),
-            ),
-            bottom: 10.0,
-            right: 10.0,
-          )
-        ],
-      ),
+          bottom: 10.0,
+          right: 10.0,
+        )
+      ],
     );
   }
 }

@@ -39,9 +39,10 @@ class PeerConnection extends EventEmitter {
     rtcPeerConnection =
         await createPeerConnection(configuration, loopbackConstraints);
     rtcPeerConnection.addStream(localStream);
-    localStream?.getTracks()?.forEach((track) {
-      rtcPeerConnection?.addTrack(track, localStream);
-    });
+    rtcPeerConnection.onAddStream = _onAddStream;
+    rtcPeerConnection.onRemoveStream = _onRemoveStream;
+    rtcPeerConnection.onRenegotiationNeeded = _onRenegotiationNeeded;
+    rtcPeerConnection.onIceCandidate = _onIceCandidate;
     rtcPeerConnection.onTrack = (RTCTrackEvent event) {
       print('Got remote track: ${event.streams[0]}');
       event.streams[0].getTracks().forEach((track) {
@@ -49,10 +50,6 @@ class PeerConnection extends EventEmitter {
         remoteStream?.addTrack(track);
       });
     };
-    rtcPeerConnection.onAddStream = _onAddStream;
-    rtcPeerConnection.onRemoveStream = _onRemoveStream;
-    rtcPeerConnection.onRenegotiationNeeded = _onRenegotiationNeeded;
-    rtcPeerConnection.onIceCandidate = _onIceCandidate;
     await renderer.initialize();
     this.emit('connected');
     print("PeerConnection connected");
@@ -62,6 +59,10 @@ class PeerConnection extends EventEmitter {
     remoteStream = stream;
     renderer.srcObject = stream;
     // renderer.objectFit = RTCVideoViewObjectFit.RTCVideoViewObjectFitContain;
+    localStream?.getTracks()?.forEach((track) {
+      rtcPeerConnection?.addTrack(track, localStream);
+    });
+
     this.emit('stream-changed');
     print("PeerConnection _onAddStream stream-changed");
   }

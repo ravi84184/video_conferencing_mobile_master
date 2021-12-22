@@ -1,5 +1,4 @@
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-
 import 'package:video_conferening_mobile/sdk/message_format.dart';
 
 class JoinedMeetingData {
@@ -79,14 +78,16 @@ class OfferSdpData {
 
 class AnswerSdpData {
   String userId;
+  String otherUserId;
   String name;
   RTCSessionDescription sdp;
 
-  AnswerSdpData({this.userId, this.name, this.sdp});
+  AnswerSdpData({this.userId, this.otherUserId, this.name, this.sdp});
 
   factory AnswerSdpData.fromJson(dynamic json) {
     return AnswerSdpData(
       userId: json['userId'],
+      otherUserId: json['otherUserId'],
       name: json['name'],
       sdp: RTCSessionDescription(json['sdp']['sdp'], json['sdp']['type']),
     );
@@ -137,6 +138,18 @@ class IceCandidateData {
         json['candidate']['sdpMid'],
         json['candidate']['sdpMLineIndex'],
       ),
+    );
+  }
+}
+
+class LeaveCandidateData {
+  String userId;
+
+  LeaveCandidateData({this.userId});
+
+  factory LeaveCandidateData.fromJson(dynamic json) {
+    return LeaveCandidateData(
+      userId: json['userId'],
     );
   }
 }

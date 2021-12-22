@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:video_conferening_mobile/pojo/meeting_detail.dart';
 import 'package:video_conferening_mobile/screen/home_screen.dart';
-import 'package:video_conferening_mobile/sdk/meeting.dart';
+import 'package:video_conferening_mobile/sdk/meeting_test.dart';
 import 'package:video_conferening_mobile/sdk/message_format.dart';
 import 'package:video_conferening_mobile/util/user.util.dart';
 import 'package:video_conferening_mobile/widget/actions_button.dart';
@@ -40,7 +40,7 @@ class MeetingScreen extends StatefulWidget {
 class _MeetingScreenState extends State<MeetingScreen> {
   bool isValidMeeting = false;
   TextEditingController textEditingController = new TextEditingController();
-  Meeting meeting;
+  MeetingTest meeting;
   bool isConnectionFailed = false;
   final _localRenderer = new RTCVideoRenderer();
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -105,7 +105,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
         await navigator.mediaDevices.getUserMedia(mediaConstraints);
     _localRenderer.srcObject = _localstream;
 
-    meeting = new Meeting(
+    meeting = new MeetingTest(
       meetingId: widget.meetingDetail.id,
       stream: _localstream,
       userId: userId,
@@ -150,7 +150,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
     meeting.on('failed', null, (ev, ctx) {
       print("failed ${ev}");
       final snackBar = SnackBar(content: Text('Connection Failed'));
-      scaffoldKey.currentState.showSnackBar(snackBar);
+      // scaffoldKey.currentState.showSnackBar(snackBar);
       setState(() {
         isConnectionFailed = true;
       });
@@ -165,7 +165,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
 
   void meetingEndedEvent() {
     final snackBar = SnackBar(content: Text('Meeing Ended'));
-    scaffoldKey.currentState.showSnackBar(snackBar);
+    // scaffoldKey.currentState.showSnackBar(snackBar);
     goToHome();
   }
 
@@ -229,7 +229,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
       text = 'https://meetx.madankumar.me/meeting/$meetingId';
     }
     await Clipboard.setData(ClipboardData(text: text));
-    scaffoldKey.currentState.showSnackBar(snackBar);
+    // scaffoldKey.currentState.showSnackBar(snackBar);
   }
 
   void handleReconnect() {

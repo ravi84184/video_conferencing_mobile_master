@@ -218,6 +218,7 @@ class _TestScreenState extends State<TestScreen> {
     print(description.toMap());
 
     await _peerConnection.setRemoteDescription(description);
+    setState(() {});
   }
 
   void _addCandidate(jsonString) async {
@@ -227,6 +228,7 @@ class _TestScreenState extends State<TestScreen> {
     dynamic candidate = new RTCIceCandidate(
         session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
     await _peerConnection.addCandidate(candidate);
+    setState(() {});
   }
 
   SizedBox videoRenderers() => SizedBox(

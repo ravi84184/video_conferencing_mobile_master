@@ -24,6 +24,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> goToJoinScreen(meetingId, userId) async {
     await setUserId(userId);
+    /*Navigator.push(context,
+        MaterialPageRoute(builder: (BuildContext context) {
+      return TestScreen(
+        meetingId: meetingId,
+        name: userId,
+        isHost: userId == "123",
+        meetingDetail: MeetingDetail(
+            hostId: "123", hostName: "$meetingId", id: "$meetingId"),
+      );
+    }));*/
     Navigator.push(context,
         MaterialPageRoute(builder: (BuildContext context) {
       return MeetingScreen(
