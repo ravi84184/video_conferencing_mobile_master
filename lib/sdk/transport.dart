@@ -1,12 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:eventify/eventify.dart';
 import 'package:web_socket_channel/io.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 class Transport extends EventEmitter {
-  IOWebSocketChannel channel;
+  WebSocketChannel channel;
   String url;
   bool canReconnect = false;
   int retryCount = 0;
@@ -16,12 +16,13 @@ class Transport extends EventEmitter {
 
   Transport({this.url, this.canReconnect, this.maxRetryCount});
 
-  void connect() async {
+  Future<void> connect() async {
     try {
       if (retryCount <= maxRetryCount) {
         retryCount++;
         //https://github.com/dart-lang/web_socket_channel/issues/61#issuecomment-585564273
         var ws = await WebSocket.connect(url).timeout(Duration(seconds: 5));
+        // channel = WebSocketChannel.connect(Uri.parse(url));
         channel = IOWebSocketChannel(ws);
         listenEvents();
       } else {
@@ -74,7 +75,7 @@ class Transport extends EventEmitter {
   }
 
   void sendHeartbeat() {
-   /* timer = Timer.periodic(Duration(seconds: 10), (timer) {
+    /* timer = Timer.periodic(Duration(seconds: 10), (timer) {
       send(json.encode({'type': 'heartbeat'}));
     });*/
   }

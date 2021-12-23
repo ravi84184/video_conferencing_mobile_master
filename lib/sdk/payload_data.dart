@@ -62,14 +62,16 @@ class IncomingConnectionRequestData {
 
 class OfferSdpData {
   String userId;
+  String otherUserId;
   String name;
   RTCSessionDescription sdp;
 
-  OfferSdpData({this.userId, this.name, this.sdp});
+  OfferSdpData({this.userId, this.otherUserId,this.name, this.sdp});
 
   factory OfferSdpData.fromJson(dynamic json) {
     return OfferSdpData(
       userId: json['userId'],
+      otherUserId: json['otherUserId'],
       name: json['name'],
       sdp: RTCSessionDescription(json['sdp']['sdp'], json['sdp']['type']),
     );

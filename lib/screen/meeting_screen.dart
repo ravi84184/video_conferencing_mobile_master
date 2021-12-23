@@ -45,7 +45,7 @@ class _MeetingScreenState extends State<MeetingScreen> {
   final _localRenderer = new RTCVideoRenderer();
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final Map<String, dynamic> mediaConstraints = {
-    "audio": true,
+    "audio": false,
     "video": true,
 //    {
 //      "mandatory": {

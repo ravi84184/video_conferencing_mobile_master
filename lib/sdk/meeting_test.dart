@@ -9,8 +9,8 @@ import 'package:video_conferening_mobile/sdk/payload_data.dart';
 import 'package:video_conferening_mobile/sdk/transport.dart';
 
 class MeetingTest extends EventEmitter {
-  final String url =
-      'wss://connect.websocket.in/v3/1?api_key=oCdCMcMPQpbvNjUIzqtvF1d2X2okWpDQj4AwARJuAgtjhzKxVEjQU6IdCjwm&notify_self';
+  // final String url ='wss://connect.websocket.in/v3/1?api_key=oCdCMcMPQpbvNjUIzqtvF1d2X2okWpDQj4AwARJuAgtjhzKxVEjQU6IdCjwm&notify_self';
+  final String url ='wss://elevate.elsner.com/wss/';
 
   // final String url = 'ws://10.0.2.2:8081/websocket/meeting';
   Transport transport;
@@ -101,8 +101,7 @@ class MeetingTest extends EventEmitter {
       logPrint("Offer Send");
       sendMessage('offer-sdp', {
         'userId': this.userId,
-        'hostUser': this.userId,
-        'answerUser': userId,
+        'otherUserId': userId,
         'sdp': sdp.toMap(),
       });
     } else {}
@@ -317,8 +316,9 @@ class MeetingTest extends EventEmitter {
   }
 
   void leaveMetting(LeaveCandidateData data) async {
-    var index = connections.indexWhere((element) => element.userId == data.userId);
-    if(index != -1){
+    var index =
+        connections.indexWhere((element) => element.userId == data.userId);
+    if (index != -1) {
       connections[index].close();
       connections.removeAt(index);
       this.emit('connection-setting-changed');
@@ -361,7 +361,7 @@ class MeetingTest extends EventEmitter {
   }
 
   void receivedOfferSdp(OfferSdpData data) {
-    if (this.userId != data.userId) {
+    if (this.userId == data.otherUserId && this.userId != data.userId) {
       logPrint("Offer receive");
       this.sendAnswerSdp(data.userId, data.sdp);
     }
@@ -389,7 +389,7 @@ class MeetingTest extends EventEmitter {
             audioEnabled: true,
             videoEnabled: true,
           )));
-      sendAnswerSdp(otherUserId,sdp);
+      sendAnswerSdp(otherUserId, sdp);
     }
   }
 
